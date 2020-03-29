@@ -11,7 +11,7 @@ import signal
 
 client = commands.Bot(command_prefix = '.')
 scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("creds.json", scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
 client2 = gspread.authorize(creds)
 sheet = client2.open("Stalking the Stalk Market").get_worksheet(1)
 lowestUser = sheet.acell('N1').value
@@ -32,7 +32,10 @@ async def on_ready():
 async def on_message(message):
     username = message.author.name.split('#')[0]
     if not message.author.bot:
-        if message.channel.name == "animal-stonks":
+        if message.channel.name in ["animal-stonks","bot-spam"]:
+
+            # handle stonks
+            # if sunday
             if datetime.datetime.today().weekday() == 6:
                 global lowestUser
                 ind = message.content.find(':stonks:')
@@ -62,6 +65,7 @@ async def on_message(message):
                             lowestUser = username
                 elif ind >=0:
                     await message.channel.send("You must be new here... its 'number:stonks:'")
+            # if weekday
             else:
                 ind = message.content.find(':stonks:')
                 if ind > 1:
@@ -121,6 +125,7 @@ async def on_message(message):
                 elif ind>=0:
                     await message.channel.send("You must be new here... its 'number:stonks:'")
 
+            # handle daily double
             ind = message.content.find(':dailydouble:')
             if ind > 1:
                 temp = ind-2
@@ -150,6 +155,9 @@ async def on_message(message):
                     curRow = len(curList)+1
                     sheet.update_acell('Q{}'.format(curRow),value)
                     sheet.update_acell('P{}'.format(curRow),username)
+
+            # handle fossil offer
+            ind = message.content.find('::')
 
 def scheduleRunner():
     while True:
