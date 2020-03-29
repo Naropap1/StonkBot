@@ -191,10 +191,77 @@ def keyboardInterruptHandler(signal,frame):
     t1.join()
     exit(0)
 
-def matchFossils():
-    ## TODO: lookup everyone's fossil checklists and display whether or not anyone needs
-    ##          a given fossil. 
+## TODO print a set of helpful tips on syntax and hot to use the bot!
+def printHelp():
     return None
+
+## WIP: define the material cost of a piece of furniture
+def addMaterials(inputString):
+    costMap,costKeys = getMaterialCosts()
+
+    # [amount, material] array
+    cost = [materialCost.split(' ') for materialCost in inputString.split(',')]
+    # attempt to sanitize input
+    for costTuple in cost:
+        amount, material = costTuple
+        for costKey in costKeys:
+            if material in costKey:
+                costTuple = [amount,costKey]
+
+    ## TODO: add a bit here that posts it on the google doc
+
+    ## TODO: call calculateValue and update doc/post it in the disc
+
+    return cost
+
+## calculate the sell value of a piece of furniture given its material cost
+def calculateValue(inputString):
+    costMap,costKeys = getMaterialCosts()
+
+    value = 0
+
+    for materialCost in inputString.split(','):
+        amount, material = materialCost.split(' ')
+
+        if material in costKeys:
+            value += costMap[material]*amount
+        # catch shorthand errors (like 'iron' instead of 'iron nuggets')
+        else:
+            if any([material in costKey for costKey in costKeys]):
+                for costKey in costKeys:
+                    if material in costKey:
+                        value += costMap[costKey]*amount
+
+    return 2*value
+
+## TODO: lookup everyone's fossil checklists and display
+##          whether or not anyone needs a given fossil. 
+def matchFossils():
+    return None
+
+## TODO: post a fossil for offer on the fossil exchange
+def offerFossils():
+    return None
+
+## TODO: clear a user's offered fossils
+def clearFossils():
+    return None
+
+## TODO: claim a fossil that is being offered. Removes it
+##          from the offer list and adds it to their checklist
+def claimFossil():
+    return None
+
+def getMaterialCosts():
+    costMap = {'Tree branch':5,'Wood':60,'Softwood':60,'Hardwood':60,\
+    'Stone':75,'Clay':100,'Iron nugget':375,'Gold nugget':10000,'Acorn':200,\
+    'Pinecone':200,'Bamboo piece':80,'Young spring bamboo':200,'Bamboo shoot':250,\
+    'Clump of weeds':10,'Cherry-blossom petal':None,'Fruit':100,'Fruit-foreign':500,\
+    'Wasp nest':300,'Rusted part':10,'Boot':10,'Old tire':10,'Empty can':10,\
+    'Star fragment':50,'Large star fragment':2500}
+    costKeys = costMap.keys()
+
+    return costMap, costKeys
 
 signal.signal(signal.SIGINT, keyboardInterruptHandler)
 
