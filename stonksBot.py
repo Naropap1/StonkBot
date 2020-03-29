@@ -156,8 +156,25 @@ async def on_message(message):
                     sheet.update_acell('Q{}'.format(curRow),value)
                     sheet.update_acell('P{}'.format(curRow),username)
 
-            # handle fossil offer
-            ind = message.content.find('::')
+            # handle fossil offers
+            ind = message.content.find(':skeletorKek:')
+            if ind > 1:
+                temp = ind-2
+                value = ''
+                while True:
+                    if temp>=0:
+                        if message.content[temp]!='>':
+                            value = message.content[temp] + value
+                            temp = temp - 1
+                        else:
+                            break
+                    else:
+                        break
+                if value != '':
+                    curList = sheet.col_values(17)
+                    curRow = len(curList)+1
+                    sheet.update_acell('Q{}'.format(curRow),value)
+                    sheet.update_acell('P{}'.format(curRow),username)
 
 def scheduleRunner():
     while True:
@@ -174,10 +191,17 @@ def keyboardInterruptHandler(signal,frame):
     t1.join()
     exit(0)
 
+def matchFossils():
+    ## TODO: lookup everyone's fossil checklists and display whether or not anyone needs
+    ##          a given fossil. 
+    return None
+
 signal.signal(signal.SIGINT, keyboardInterruptHandler)
 
 schedule.every().day.at("22:00").do(clearDouble)
 
 t1.start()
 
-client.run('NjkzNjU5NDk4NTkzNzc5NzUz.XoATcQ.iPjUG7zePu-0HaNBxIRxLlKy8tg')
+with open('discordCred.txt.') as f:
+    discord_key = f.read()
+    client.run(discord_key)
