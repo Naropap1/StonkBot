@@ -39,6 +39,7 @@ async def on_message(message):
     username = message.author.name.split('#')[0]
     if not message.author.bot:
         if message.channel.name in ["animal-stonks","bot-spam"]:
+            global connectedStartTime
             if datetime.datetime.now() > connectedStartTime + datetime.timedelta(minutes=10):
                 connectedStartTime = datetime.datetime.now()
                 global scope
