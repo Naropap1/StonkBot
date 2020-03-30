@@ -33,7 +33,6 @@ async def on_message(message):
     username = message.author.name.split('#')[0]
     if not message.author.bot:
         if message.channel.name in ["animal-stonks","bot-spam"]:
-
             # handle stonks
             # if sunday
             if datetime.datetime.today().weekday() == 6:
@@ -118,10 +117,15 @@ async def on_message(message):
                             sheet.update_acell('A{}'.format(userRow),username)
                         dataCol = 2
                         dataCol = dataCol + datetime.datetime.today().weekday()*2 
-                        if int(datetime.datetime.now().hour)>=12:
+                        timeModifier = 0
+                        for role in message.author.roles:
+                            if role.name == 'West Coast':
+                                timeModifier = -3
+                        if (int(datetime.datetime.now().hour)+timeModifier)%24>=12:
                             dataCol = dataCol + 1
                         sheet.update_cell(userRow,dataCol,int(value))
-
+                    else:
+                        await message.channel.send("You must be new here... its 'number:stonks:' ... no spaces!")
                 elif ind>=0:
                     await message.channel.send("You must be new here... its 'number:stonks:'")
 
