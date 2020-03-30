@@ -9,13 +9,19 @@ import time
 import threading
 import signal
 
+#discord client global
 client = commands.Bot(command_prefix = '.')
+
+#gspread client global
 scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
 client2 = gspread.authorize(creds)
 sheet = client2.open("Stalking the Stalk Market").get_worksheet(1)
-lowestUser = sheet.acell('N1').value
+
+#global helper variables
 running=True
+connectedStartTime = datetime.datetime.now()
+lowestUser = sheet.acell('N1').value
 
 def clearDouble():
     curList = sheet.col_values(17)
@@ -33,6 +39,16 @@ async def on_message(message):
     username = message.author.name.split('#')[0]
     if not message.author.bot:
         if message.channel.name in ["animal-stonks","bot-spam"]:
+            if datetime.datetime.now() > connectedStartTime + datetime.timedelta(minutes=10):
+                connectedStartTime = datetime.datetime.now()
+                global scope
+                global creds
+                global client2
+                global sheet
+                creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+                client2 = gspread.authorize(creds)
+                sheet = client2.open("Stalking the Stalk Market").get_worksheet(1)
+
             # handle stonks
             # if sunday
             if datetime.datetime.today().weekday() == 6:
@@ -80,13 +96,13 @@ async def on_message(message):
                         else:
                             break
                     if value != '':
-                        r = random.randint(1,12)
+                        r = random.randint(1,13)
                         if r == 1:
                             await message.channel.send('This is your broker, {} is reporting {} bells for turnips'.format(username,value))
                         elif r == 2:
                             await message.channel.send("Can't a bot get a break? Alright, {} is reporting {} bells for turnips I guess...".format(username,value))
                         elif r == 3:
-                            await message.channel.send("Capatalist pig {} can sell turnips for {} bells".format(username,value))
+                            await message.channel.send("Capitalist pig {} can sell turnips for {} bells".format(username,value))
                         elif r == 4:
                             await message.channel.send("JFC, I need to start charging interest. Ok, well, {} is reporting {} bells for turnips".format(username,value))
                         elif r == 5:
@@ -105,6 +121,8 @@ async def on_message(message):
                             await message.channel.send("{} reporting {} bells for turnips! You can talk the talk, but can you stonk the stonk?".format(username,value))
                         elif r == 12:
                             await message.channel.send("{} reporting {} bells for turnips! Turnip for what?".format(username,value))
+                        elif r == 13:
+                            await message.channel.send("{} reporting {} bells for turnips! Welcome to the stalk markets motherfucker.".format(username,value))
                         curReportedList = sheet.col_values(1)
                         userRow = -1
                         if username in curReportedList:
