@@ -23,11 +23,26 @@ running=True
 connectedStartTime = datetime.datetime.now()
 lowestUser = sheet.acell('N1').value
 
+def reconnectGspread():
+    global scope
+    global creds
+    global client2
+    global sheet
+    global connectedStartTime
+    connectedStartTime = datetime.datetime.now()
+    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    client2 = gspread.authorize(creds)
+    sheet = client2.open("Stalking the Stalk Market").get_worksheet(1)
+
 def clearDouble():
+    global connectedStartTime
+    if datetime.datetime.now() > connectedStartTime + datetime.timedelta(minutes=10):
+        reconnectGspread()
     curList = sheet.col_values(17)
-    curRow = 0
+    curRow = 1
     for h in curList:
         sheet.update_cell(curRow,17,"")
+        sheet.update_cell(curRow,16,"")
         curRow = curRow + 1
 
 @client.event
@@ -41,15 +56,7 @@ async def on_message(message):
         if message.channel.name in ["animal-stonks","bot-spam"]:
             global connectedStartTime
             if datetime.datetime.now() > connectedStartTime + datetime.timedelta(minutes=10):
-                connectedStartTime = datetime.datetime.now()
-                global scope
-                global creds
-                global client2
-                global sheet
-                creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
-                client2 = gspread.authorize(creds)
-                sheet = client2.open("Stalking the Stalk Market").get_worksheet(1)
-
+                reconnectGspread()
             # handle stonks
             # if sunday
             if datetime.datetime.today().weekday() == 6:
@@ -289,6 +296,7 @@ def getMaterialCosts():
 signal.signal(signal.SIGINT, keyboardInterruptHandler)
 
 schedule.every().day.at("22:00").do(clearDouble)
+schedule.every().day.at("08:00").do(clearDouble)
 
 t1.start()
 
