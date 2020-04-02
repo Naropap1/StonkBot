@@ -188,10 +188,13 @@ async def on_message(message):
                         item_cost = 2*int(lookup_res[1].replace(',',''))
                         item_mats = lookup_res[2]
                         value_string = '({} Bells <:isabelleDab:692772908166021150> {})'.format(item_cost, item_mats)
+                        if lookup_res[3].isnumeric():
+                            item_ratio = float(lookup_res[3])
                     else:
                         item_cost = ''
                         item_mats = ''
                         value_string = ''
+                        item_ratio = 1.00
 
                     r = random.randint(1,5)
                     if r == 1:
@@ -204,6 +207,14 @@ async def on_message(message):
                         await message.channel.send("Gee Bill! Mom let's you sell *two*    ....    {} {}".format(value,value_string))
                     elif r == 5:
                         await message.channel.send("Reporting your <:dailydouble:692011979274977301> daily double <:dailydouble:692011979274977301>    ....    {} {}".format(value,value_string))
+
+                    if item_ratio <= 0:
+                        await message.channel.send("*Careful*! This sells for less than it's materials! ({.2})".format(item_ratio))
+                    elif item_ratio < 1:
+                        await message.channel.send("Alas, this only sells for {.2} efficiency...".format(item_ratio))
+                    elif item_ratio > 1:
+                        await message.channel.send("<:naroPog:466231362563604492> This sells for {.2} profit over its materials!".format(item_ratio))
+
                     curRow = user_idx+1
                     sheet.update_acell('P{}'.format(curRow),username)
                     sheet.update_acell('Q{}'.format(curRow),value)
@@ -225,21 +236,26 @@ async def on_message(message):
                     else:
                         break
                 if value != '':
-                    r = random.randint(1,5)
-                    if r == 1:
-                        await message.channel.send('<:skeletor:689503610509328468> THEM\'S SOME CRAAAAZY BONES    ...    {}'.format(value))
-                    elif r == 2:
-                        await message.channel.send("Prospector {} is offering    ....    {} <:skeletor:689503610509328468>".format(username,value))
-                    elif r == 3:
-                        await message.channel.send("<:skeletor:689503610509328468> Dino dupe! <:skeletor:689503610509328468>    ....    {}".format(value))
-                    elif r == 4:
-                        await message.channel.send("Dang, {} needs a new shovel!    ....    {}".format(username,value))
-                    elif r == 5:
-                        await message.channel.send("Gotta dig 'em all! FossilDex exchange offer:    ....    {}".format(value))
+                    if value == 'CLEAR':
+                        curRow = user_idx+1
+                        sheet.update_acell('P{}'.format(curRow),username)
+                        sheet.update_acell('T{}'.format(curRow),'')
+                    else:  
+                        r = random.randint(1,5)
+                        if r == 1:
+                            await message.channel.send('<:skeletor:689503610509328468> Them\'s some craaaaazy bones    ...    {}'.format(value))
+                        elif r == 2:
+                            await message.channel.send("Prospector {} is offering    ....    {} <:skeletor:689503610509328468>".format(username,value))
+                        elif r == 3:
+                            await message.channel.send("<:skeletor:689503610509328468> Dino dupe! <:skeletor:689503610509328468>    ....    {}".format(value))
+                        elif r == 4:
+                            await message.channel.send("Dang, {} needs a new shovel!    ....    {}".format(username,value))
+                        elif r == 5:
+                            await message.channel.send("Gotta dig 'em all! FossilDex exchange offer:    ....    {}".format(value))
 
-                    curRow = user_idx+1
-                    sheet.update_acell('P{}'.format(curRow),username)
-                    sheet.update_acell('T{}'.format(curRow),value)
+                        curRow = user_idx+1
+                        sheet.update_acell('P{}'.format(curRow),username)
+                        sheet.update_acell('T{}'.format(curRow),value)
 
 def scheduleRunner():
     while True:
@@ -294,6 +310,7 @@ def lookupItem(item_name):
         row_vals = val_sheet.row_values(item_idx+3)
 
         item_name = row_vals[0]
+        item_ratio = row_vals[1]
         item_value = row_vals[3]
         material_names = [mat_name for mat_name in val_sheet.row_values(1)[4:]]
         material_strings = [' '.join(duo) for duo in zip(row_vals[4:],material_names) if duo[0] != '' if int(duo[0])>0]
@@ -301,19 +318,16 @@ def lookupItem(item_name):
     else:
         return False
 
-    return (item_name,item_value,item_materials)
+    return (item_name,item_value,item_materials,item_ratio)
 
 ## TODO: lookup everyone's fossil checklists and display
 ##          whether or not anyone needs a given fossil. 
 def matchFossils():
+
     return None
 
 ## TODO: post a fossil for offer on the fossil exchange
 def offerFossils():
-    return None
-
-## TODO: clear a user's offered fossils
-def clearFossils():
     return None
 
 ## TODO: claim a fossil that is being offered. Removes it
