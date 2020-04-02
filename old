@@ -1,0 +1,39 @@
+## WIP: define the material cost of a piece of furniture
+def addMaterials(inputString):
+    costMap,costKeys = getMaterialCosts()
+
+    # [amount, material] array
+    cost = [materialCost.split(' ') for materialCost in inputString.split(',')]
+    # attempt to sanitize input
+    for costTuple in cost:
+        amount, material = costTuple
+        for costKey in costKeys:
+            if material in costKey:
+                costTuple = [amount,costKey]
+
+    ## TODO: add a bit here that posts it on the google doc
+
+    ## TODO: update doc/post value in the disc
+    value = sum([calculateValue(costTuple) for costTuple in cost])
+
+    return cost
+
+## calculate the sell value of a piece of furniture given its material cost
+def calculateValue(inputString):
+    costMap,costKeys = getMaterialCosts()
+
+    value = 0
+
+    for materialCost in inputString.split(','):
+        amount, material = materialCost.split(' ')
+
+        if material in costKeys:
+            value += costMap[material]*amount
+        # catch shorthand errors (like 'iron' instead of 'iron nuggets')
+        else:
+            if any([material in costKey for costKey in costKeys]):
+                for costKey in costKeys:
+                    if material in costKey:
+                        value += costMap[costKey]*amount
+
+    return 2*value

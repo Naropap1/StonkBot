@@ -16,7 +16,9 @@ client = commands.Bot(command_prefix = '.')
 scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
 client2 = gspread.authorize(creds)
-sheet = client2.open("Stalking the Stalk Market").get_worksheet(1)
+miscsheet = client2.open('Stalking the Stalk Market').worksheet('Misc')
+usermap = {username: realname for realname,username in zip(miscsheet.col_values(6)[1:],miscsheet.col_values(7)[1:])}
+sheet = client2.open('Stalking the Stalk Market').worksheet('The Stalk Market')
 
 #global helper variables
 running=True
@@ -32,7 +34,7 @@ def reconnectGspread():
     connectedStartTime = datetime.datetime.now()
     creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
     client2 = gspread.authorize(creds)
-    sheet = client2.open("Stalking the Stalk Market").get_worksheet(1)
+    sheet = client2.open("Stalking the Stalk Market").worksheet('The Stalk Market')
 
 def clearDouble():
     global connectedStartTime
@@ -42,7 +44,7 @@ def clearDouble():
     curRow = 1
     for h in curList:
         sheet.update_cell(curRow,17,"")
-        sheet.update_cell(curRow,16,"")
+        #sheet.update_cell(curRow,16,"")
         curRow = curRow + 1
 
 @client.event
@@ -51,7 +53,8 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    username = message.author.name.split('#')[0]
+    global usermap
+    username = usermap[message.author.name.split('#')[0]]
     if not message.author.bot:
         if message.channel.name in ["animal-stonks","bot-spam"]:
             global connectedStartTime
@@ -88,7 +91,7 @@ async def on_message(message):
                             lowestUser = username
                 elif ind >=0:
                     await message.channel.send("You must be new here... its 'number:stonks:'")
-            # if weekday
+            # if not sunday
             else:
                 ind = message.content.find(':stonks:')
                 if ind > 1:
@@ -221,48 +224,23 @@ def keyboardInterruptHandler(signal,frame):
     t1.join()
     exit(0)
 
-## TODO print a set of helpful tips on syntax and hot to use the bot!
+## TODO print a set of helpful tips on syntax and how to use the bot!
 def printHelp():
     return None
 
-## WIP: define the material cost of a piece of furniture
-def addMaterials(inputString):
-    costMap,costKeys = getMaterialCosts()
+# references the below spreadsheet to get material cost and sell value of DIY furniture items
+def lookupValue(itemName):
+    ref_sheet_URL = 'https://docs.google.com/spreadsheets/d/14_0mnSZSwIaBfjd_2MZvzeaymdxqYnkHlIS4iKA3NBk/edit?usp=sharing'
 
-    # [amount, material] array
-    cost = [materialCost.split(' ') for materialCost in inputString.split(',')]
-    # attempt to sanitize input
-    for costTuple in cost:
-        amount, material = costTuple
-        for costKey in costKeys:
-            if material in costKey:
-                costTuple = [amount,costKey]
+    local_scope = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+    sheet_ID = '14_0mnSZSwIaBfjd_2MZvzeaymdxqYnkHlIS4iKA3NBk'
+    value_range = 'DIY Catalog!A3:D600'
+    material_names = 'DIY Catalog!E1:BZ1'
+    material_range = 'DIY Catalog!E3:BZ600'
 
-    ## TODO: add a bit here that posts it on the google doc
-
-    ## TODO: call calculateValue and update doc/post it in the disc
-
-    return cost
-
-## calculate the sell value of a piece of furniture given its material cost
-def calculateValue(inputString):
-    costMap,costKeys = getMaterialCosts()
-
-    value = 0
-
-    for materialCost in inputString.split(','):
-        amount, material = materialCost.split(' ')
-
-        if material in costKeys:
-            value += costMap[material]*amount
-        # catch shorthand errors (like 'iron' instead of 'iron nuggets')
-        else:
-            if any([material in costKey for costKey in costKeys]):
-                for costKey in costKeys:
-                    if material in costKey:
-                        value += costMap[costKey]*amount
-
-    return 2*value
+    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    client2 = gspread.authorize(creds)
+    sheet = client2.open("Animal Crossing").get_worksheet(1)
 
 ## TODO: lookup everyone's fossil checklists and display
 ##          whether or not anyone needs a given fossil. 
@@ -283,15 +261,15 @@ def claimFossil():
     return None
 
 def getMaterialCosts():
-    costMap = {'Tree branch':5,'Wood':60,'Softwood':60,'Hardwood':60,\
+    cost_map = {'Tree branch':5,'Wood':60,'Softwood':60,'Hardwood':60,\
     'Stone':75,'Clay':100,'Iron nugget':375,'Gold nugget':10000,'Acorn':200,\
     'Pinecone':200,'Bamboo piece':80,'Young spring bamboo':200,'Bamboo shoot':250,\
     'Clump of weeds':10,'Cherry-blossom petal':None,'Fruit':100,'Fruit-foreign':500,\
     'Wasp nest':300,'Rusted part':10,'Boot':10,'Old tire':10,'Empty can':10,\
     'Star fragment':50,'Large star fragment':2500}
-    costKeys = costMap.keys()
+    cost_keys = cost_map.keys()
 
-    return costMap, costKeys
+    return cost_map, cost_keys
 
 signal.signal(signal.SIGINT, keyboardInterruptHandler)
 
