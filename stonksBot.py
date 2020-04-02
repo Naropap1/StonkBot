@@ -16,9 +16,9 @@ client = commands.Bot(command_prefix = '.')
 scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
 client2 = gspread.authorize(creds)
-miscsheet = client2.open('Stalking the Stalk Market').worksheet('Misc')
-usermap = {username: realname for realname,username in zip(miscsheet.col_values(6)[1:],miscsheet.col_values(7)[1:])}
-sheet = client2.open('Stalking the Stalk Market').worksheet('The Stalk Market')
+misc_sheet = client2.open('Stalking the Stalk Market').worksheet('Misc')
+usermap = {username: realname for realname,username in zip(misc_sheet.col_values(6)[1:],misc_sheet.col_values(7)[1:])}
+sheet = client2.open('Stalking the Stalk Market').worksheet('Data')
 
 #global helper variables
 running=True
@@ -32,9 +32,9 @@ def reconnectGspread():
     global sheet
     global connectedStartTime
     connectedStartTime = datetime.datetime.now()
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
     client2 = gspread.authorize(creds)
-    sheet = client2.open("Stalking the Stalk Market").worksheet('The Stalk Market')
+    sheet = client2.open('Stalking the Stalk Market').worksheet('Data')
 
 def clearDouble():
     global connectedStartTime
@@ -54,14 +54,20 @@ async def on_ready():
 @client.event
 async def on_message(message):
     global usermap
-    username = message.author.name.split('#')[0]
-    if username in usermap:
-        usermap[username]
     if not message.author.bot:
         if message.channel.name in ["animal-stonks","bot-spam"]:
             global connectedStartTime
             if datetime.datetime.now() > connectedStartTime + datetime.timedelta(minutes=10):
                 reconnectGspread()
+
+            username = message.author.name.split('#')[0]
+            userList = sheet.col_values(16)
+            if username in usermap:
+                username = usermap[username]
+                user_idx = userList.index(username)
+            else:
+                user_idx = len(userList)+1
+
             # handle stonks
             # if sunday
             if datetime.datetime.today().weekday() == 6:
@@ -150,7 +156,7 @@ async def on_message(message):
                         dataCol = dataCol + datetime.datetime.today().weekday()*2 
                         timeModifier = 0
                         for role in message.author.roles:
-                            if role.name == 'West Coast':
+                            if role.name in ['West Coast','PDT','PST','WC','PST/PDT','PDT/PST']:
                                 timeModifier = -3
                         if (int(datetime.datetime.now().hour)+timeModifier)%24>=12:
                             dataCol = dataCol + 1
@@ -175,24 +181,37 @@ async def on_message(message):
                     else:
                         break
                 if value != '':
+
+                    lookup_res = lookupItem(value)
+                    if lookup_res:
+                        value = lookup_res[0]
+                        item_cost = 2*int(lookup_res[1].replace(',',''))
+                        item_mats = lookup_res[2]
+                        value_string = '({} Bells <:isabelleDab:692772908166021150> {})'.format(item_cost, item_mats)
+                    else:
+                        item_cost = ''
+                        item_mats = ''
+                        value_string = ''
+
                     r = random.randint(1,5)
                     if r == 1:
-                        await message.channel.send('*Jeopardy Sirens*    What is    ...    {}'.format(value))
+                        await message.channel.send('*Jeopardy Sirens*    What is    ...    {} {}'.format(value,value_string))
                     elif r == 2:
-                        await message.channel.send("Hollup, you're saying    ....    {}    ...    is up for :dailydouble:!?".format(value))
+                        await message.channel.send("Hollup, you're saying    ....    {}    ...    is up for <:dailydouble:692011979274977301>!? {}".format(value,value_string))
                     elif r == 3:
-                        await message.channel.send("Time to get rich off of    ....    {}".format(value))
+                        await message.channel.send("Time to get rich off of    ....    {} {}".format(value,value_string))
                     elif r == 4:
-                        await message.channel.send("Gee Bill! Mom let's you sell *two*    ....    {}".format(value))
+                        await message.channel.send("Gee Bill! Mom let's you sell *two*    ....    {} {}".format(value,value_string))
                     elif r == 5:
-                        await message.channel.send("Reporting your daily double    ....    {}".format(value))
-                    curList = sheet.col_values(17)
-                    curRow = len(curList)+1
-                    sheet.update_acell('Q{}'.format(curRow),value)
+                        await message.channel.send("Reporting your <:dailydouble:692011979274977301> daily double <:dailydouble:692011979274977301>    ....    {} {}".format(value,value_string))
+                    curRow = user_idx+1
                     sheet.update_acell('P{}'.format(curRow),username)
+                    sheet.update_acell('Q{}'.format(curRow),value)
+                    sheet.update_acell('R{}'.format(curRow),item_cost)
+                    sheet.update_acell('S{}'.format(curRow),item_mats)
 
             # handle fossil offers
-            ind = message.content.find(':skeletorKek:')
+            ind = message.content.find(':skeletor:')
             if ind > 1:
                 temp = ind-2
                 value = ''
@@ -206,10 +225,21 @@ async def on_message(message):
                     else:
                         break
                 if value != '':
-                    curList = sheet.col_values(17)
-                    curRow = len(curList)+1
-                    sheet.update_acell('Q{}'.format(curRow),value)
+                    r = random.randint(1,5)
+                    if r == 1:
+                        await message.channel.send('<:skeletor:689503610509328468> THEM\'S SOME CRAAAAZY BONES    ...    {}'.format(value))
+                    elif r == 2:
+                        await message.channel.send("Prospector {} is offering    ....    {} <:skeletor:689503610509328468>".format(username,value))
+                    elif r == 3:
+                        await message.channel.send("<:skeletor:689503610509328468> Dino dupe! <:skeletor:689503610509328468>    ....    {}".format(value))
+                    elif r == 4:
+                        await message.channel.send("Dang, {} needs a new shovel!    ....    {}".format(username,value))
+                    elif r == 5:
+                        await message.channel.send("Gotta dig 'em all! FossilDex exchange offer:    ....    {}".format(value))
+
+                    curRow = user_idx+1
                     sheet.update_acell('P{}'.format(curRow),username)
+                    sheet.update_acell('T{}'.format(curRow),value)
 
 def scheduleRunner():
     while True:
@@ -221,6 +251,7 @@ def scheduleRunner():
 t1 = threading.Thread(target=scheduleRunner)
 
 def keyboardInterruptHandler(signal,frame):
+    print('Stopping...')
     global running
     running = False
     t1.join()
@@ -230,21 +261,47 @@ def keyboardInterruptHandler(signal,frame):
 def printHelp():
     return None
 
+# cleans a string for item material/value lookup matching
+def sanitizeString(inputString):
+    punctuation = ['-',':','_','+',',','.',';','\'','\"','\\','/','|','<','>','(',')',\
+                   '[',']','{','}','#','$','%','@','!','?','`','*','&','^']
+
+    newString = inputString.strip(' \n\t')
+    if newString[-3:] == 'x10':
+        newString = newString[:-3]
+    else:
+        newString = newString
+    for punct in punctuation:
+        newString = newString.replace(punct,' ')
+    newString = newString.strip(' \n\t')
+    newString = newString.replace('-',' ')
+    newString = newString.lower()
+
+    return newString
+
 # references the below spreadsheet to get material cost and sell value of DIY furniture items
-def lookupValue(itemName):
+def lookupItem(item_name):
     ref_sheet_URL = 'https://docs.google.com/spreadsheets/d/14_0mnSZSwIaBfjd_2MZvzeaymdxqYnkHlIS4iKA3NBk/edit?usp=sharing'
+    item_name_clean = sanitizeString(item_name)
 
-    local_scope = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-    sheet_ID = '14_0mnSZSwIaBfjd_2MZvzeaymdxqYnkHlIS4iKA3NBk'
-    value_range = 'DIY Catalog!A3:D600'
-    material_names = 'DIY Catalog!E1:BZ1'
-    material_range = 'DIY Catalog!E3:BZ600'
-
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
     client2 = gspread.authorize(creds)
-    sheet = client2.open("Animal Crossing").worksheet('DIY Catalog')
+    val_sheet = client2.open_by_key('14_0mnSZSwIaBfjd_2MZvzeaymdxqYnkHlIS4iKA3NBk').worksheet('DIY Catalog')
 
-    #if itemName.lower()
+    sheet_clean_names = [sanitizeString(sheet_name) for sheet_name in val_sheet.col_values(1)[2:]]
+    if item_name_clean in sheet_clean_names:
+        item_idx = sheet_clean_names.index(item_name_clean)
+        row_vals = val_sheet.row_values(item_idx+3)
+
+        item_name = row_vals[0]
+        item_value = row_vals[3]
+        material_names = [mat_name for mat_name in val_sheet.row_values(1)[4:]]
+        material_strings = [' '.join(duo) for duo in zip(row_vals[4:],material_names) if duo[0] != '' if int(duo[0])>0]
+        item_materials = ', '.join(material_strings)
+    else:
+        return False
+
+    return (item_name,item_value,item_materials)
 
 ## TODO: lookup everyone's fossil checklists and display
 ##          whether or not anyone needs a given fossil. 
