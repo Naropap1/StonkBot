@@ -54,7 +54,9 @@ async def on_ready():
 @client.event
 async def on_message(message):
     global usermap
-    username = usermap[message.author.name.split('#')[0]]
+    username = message.author.name.split('#')[0]
+    if username in usermap:
+        usermap[username]
     if not message.author.bot:
         if message.channel.name in ["animal-stonks","bot-spam"]:
             global connectedStartTime
@@ -240,7 +242,9 @@ def lookupValue(itemName):
 
     creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
     client2 = gspread.authorize(creds)
-    sheet = client2.open("Animal Crossing").get_worksheet(1)
+    sheet = client2.open("Animal Crossing").worksheet('DIY Catalog')
+
+    #if itemName.lower()
 
 ## TODO: lookup everyone's fossil checklists and display
 ##          whether or not anyone needs a given fossil. 
