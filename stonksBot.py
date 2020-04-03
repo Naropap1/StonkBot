@@ -269,13 +269,13 @@ async def on_message(message):
                                 if r == 1:
                                     await message.channel.send("<:skeletor:689503610509328468> We've got a match! {}: {}".format(match_row[0],', '.join(match_row[1])))
                                 elif r == 2:
-                                    await message.channel.send("<:skeletor:689503610509328468> We've got a match! {} needs a(n) {}".format(match_row[0],', '.join(match_row[1])))
+                                    await message.channel.send("<:skeletor:689503610509328468> We've got a match! {} needs a(n) {}".format(match_row[0],' and '.join(match_row[1])))
                                 elif r == 3:
-                                    await message.channel.send("<:skeletor:689503610509328468> We've got a match! {} could use a(n) {}".format(match_row[0],', '.join(match_row[1])))
+                                    await message.channel.send("<:skeletor:689503610509328468> We've got a match! {} could use a(n) {}".format(match_row[0],' or '.join(match_row[1])))
                                 elif r == 4:
-                                    await message.channel.send("<:skeletor:689503610509328468> We've got a match! {}'s Museum is lacking a(n) ' {}".format(match_row[0],', '.join(match_row[1])))
+                                    await message.channel.send("<:skeletor:689503610509328468> We've got a match! {}'s Museum is lacking a(n) ' {}".format(match_row[0],' and '.join(match_row[1])))
                                 elif r == 5:
-                                    await message.channel.send("<:skeletor:689503610509328468> We've got a match! {} doesn't have a(n) {} yet. Throw 'em a bone!".format(match_row[0],', '.join(match_row[1])))
+                                    await message.channel.send("<:skeletor:689503610509328468> We've got a match! {} doesn't have a(n) {} yet. Throw 'em a bone!".format(match_row[0],' or '.join(match_row[1])))
 
 
 def scheduleRunner():
@@ -378,7 +378,7 @@ def matchFossils(fossilList):
         else:
             f_part = dino +' '+ part
         fossil_names.append(f_part)
-    fossil_names_lower = [f_name.lower() for f_name in fossil_names]
+    fossil_names_clean = [sanitizeString(f_name) for f_name in fossil_names]
 
     matches = []
 
@@ -388,8 +388,9 @@ def matchFossils(fossilList):
         user_matches = []
 
         for fossil in fossilList:
-            if fossil.lower().strip() in fossil_names_lower:
-                f_idx = fossil_names_lower.index(fossil.lower())
+            fossil_clean = sanitizeString(fossil)
+            if fossil_clean in fossil_names_clean:
+                f_idx = fossil_names_clean.index(fossil_clean)
                 if not user_bools[f_idx]:
                     user_matches.append(fossil_names[f_idx])
 
