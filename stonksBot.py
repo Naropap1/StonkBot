@@ -86,17 +86,20 @@ async def on_message(message):
                         else:
                             break
                     if value != '':
-                        curNum = int(sheet.acell('O1').value)
-                        newNum = int(value)
-                        if curNum < newNum:
-                            await message.channel.send("Thanks for reporting {}, but {} got you beat with {}".format(username,lowestUser,curNum))
-                        elif curNum == newNum:
-                            await message.channel.send("Oh damn {}, your tied with {}, maybe help out with hosting unless someone reports lower".format(username,lowestUser,curNum))
+                        if value == 'HELP':
+                            await message.channel.send(getHelpText())
                         else:
-                            await message.channel.send("THIS IS NOT A DRILL!!!NEW LOW!!!!    ...    {}".format(newNum))
-                            sheet.update_acell('O1',newNum)
-                            sheet.update_acell('N1',message.author.name.split('#')[0])
-                            lowestUser = username
+                            curNum = int(sheet.acell('O1').value)
+                            newNum = int(value)
+                            if curNum < newNum:
+                                await message.channel.send("Thanks for reporting {}, but {} got you beat with {}".format(username,lowestUser,curNum))
+                            elif curNum == newNum:
+                                await message.channel.send("Oh damn {}, your tied with {}, maybe help out with hosting unless someone reports lower".format(username,lowestUser,curNum))
+                            else:
+                                await message.channel.send("THIS IS NOT A DRILL!!!NEW LOW!!!!    ...    {}".format(newNum))
+                                sheet.update_acell('O1',newNum)
+                                sheet.update_acell('N1',message.author.name.split('#')[0])
+                                lowestUser = username
                 elif ind >=0:
                     await message.channel.send("You must be new here... its 'number:stonks:'")
             # if not sunday
@@ -190,6 +193,8 @@ async def on_message(message):
                         value_string = '({} Bells <:isabelleDab:692772908166021150> {})'.format(item_cost, item_mats)
                         if lookup_res[3].isnumeric():
                             item_ratio = float(lookup_res[3])
+                        else:
+                            item_ratio = 1.00
                     else:
                         item_cost = ''
                         item_mats = ''
@@ -257,6 +262,22 @@ async def on_message(message):
                         sheet.update_acell('P{}'.format(curRow),username)
                         sheet.update_acell('T{}'.format(curRow),value)
 
+                        matches = matchFossils(value.split(','))
+                        for match_row in matches:
+                            if len(match_row[1]) >= 1:
+                                r = random.randint(1,5)
+                                if r == 1:
+                                    await message.channel.send("<:skeletor:689503610509328468> We've got a match! {}: {}".format(match_row[0],', '.join(match_row[1])))
+                                elif r == 2:
+                                    await message.channel.send("<:skeletor:689503610509328468> We've got a match! {} needs a(n) {}".format(match_row[0],', '.join(match_row[1])))
+                                elif r == 3:
+                                    await message.channel.send("<:skeletor:689503610509328468> We've got a match! {} could use a(n) {}".format(match_row[0],', '.join(match_row[1])))
+                                elif r == 4:
+                                    await message.channel.send("<:skeletor:689503610509328468> We've got a match! {}'s Museum is lacking a(n) ' {}".format(match_row[0],', '.join(match_row[1])))
+                                elif r == 5:
+                                    await message.channel.send("<:skeletor:689503610509328468> We've got a match! {} doesn't have a(n) {} yet. Throw 'em a bone!".format(match_row[0],', '.join(match_row[1])))
+
+
 def scheduleRunner():
     while True:
         global running
@@ -273,9 +294,20 @@ def keyboardInterruptHandler(signal,frame):
     t1.join()
     exit(0)
 
-## TODO print a set of helpful tips on syntax and how to use the bot!
-def printHelp():
-    return None
+## return a set of helpful tips on syntax and how to use the bot!
+def getHelpText():
+    help_txt = '''Hi, I'm StonksBot! There are currently *3* ways I can help you:
+        1) <number><:stonks:692774931213189121>
+            Update your current stalk market price. Cleared every Saturday 10PM.
+            Make sure you are flaired properly if not in EST!
+        2) <furniture><:dailydouble:692011979274977301>
+            Update your current Hot item at the store. Cleared daily at 10PM.
+            Note: Not all items have full price and material data yet! Fruit furniture pricing assumes foreign fruit.
+        3) <fossils><:skeletor:689503610509328468>
+            Update your currently offered fossils! Add them as a comma-separated list.
+            Clear your current offers with CLEAR<:skeletor:689503610509328468>.
+            Make sure you spell the names correctly, as they appear in your inventory!'''
+    return help_txt
 
 # cleans a string for item material/value lookup matching
 def sanitizeString(inputString):
@@ -322,9 +354,47 @@ def lookupItem(item_name):
 
 ## TODO: lookup everyone's fossil checklists and display
 ##          whether or not anyone needs a given fossil. 
-def matchFossils():
+def matchFossils(fossilList):
+    f_sheet = client2.open('Stalking the Stalk Market').worksheet('Fossil Stock')
+    names = f_sheet.col_values(1)[2:]
 
-    return None
+    titles = f_sheet.row_values(1)[1:]
+    dinos = []
+    last = ''
+    for dino in titles:
+        if dino in ['-','',' ']:
+            dino = last
+        last = dino
+        dinos.append(last)
+
+    parts = f_sheet.row_values(2)[1:]
+    fossil_names = []
+    for dino,part in zip(dinos,parts):
+        if part in ['-','--','',' ']:
+            f_part = dino
+        elif part in ['Left Wing','Right Wing']:
+            f_part = part[:-4]
+            f_part = f_part + dino + ' Wing'
+        else:
+            f_part = dino +' '+ part
+        fossil_names.append(f_part)
+    fossil_names_lower = [f_name.lower() for f_name in fossil_names]
+
+    matches = []
+
+    for i in range(1,len(names)+1):
+        username = names[i-1]
+        user_bools = [True if val == 'TRUE' else False for val in f_sheet.row_values(2+i)[1:]]
+        user_matches = []
+
+        for fossil in fossilList:
+            if fossil.lower().strip() in fossil_names_lower:
+                f_idx = fossil_names_lower.index(fossil.lower())
+                if not user_bools[f_idx]:
+                    user_matches.append(fossil_names[f_idx])
+
+        matches.append(user_matches)
+    return [[name,match] for name,match in zip(names,matches)]
 
 ## TODO: post a fossil for offer on the fossil exchange
 def offerFossils():
