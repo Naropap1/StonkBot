@@ -44,6 +44,8 @@ def clearDouble():
     curRow = 1
     for h in curList:
         sheet.update_cell(curRow,17,"")
+        sheet.update_cell(curRow,18,"")
+        sheet.update_cell(curRow,19,"")
         #sheet.update_cell(curRow,16,"")
         curRow = curRow + 1
 
