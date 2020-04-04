@@ -190,7 +190,11 @@ async def on_message(message):
                     lookup_res = lookupItem(value)
                     if lookup_res:
                         value = lookup_res[0]
-                        item_cost = 2*int(lookup_res[1].replace(',',''))
+                        item_cost = lookup_res[1].replace(',','')
+                        if item_cost.isnumeric():
+                            item_cost = '{:,}'.format(2*int(item_cost))
+                        else:
+                            item_cost = '???'
                         item_mats = lookup_res[2]
                         value_string = '({} Bells <:isabelleDab:692772908166021150> {})'.format(item_cost, item_mats)
                         if lookup_res[3].isnumeric():
@@ -398,10 +402,6 @@ def matchFossils(fossilList):
 
         matches.append(user_matches)
     return [[name,match] for name,match in zip(names,matches)]
-
-## TODO: post a fossil for offer on the fossil exchange
-def offerFossils():
-    return None
 
 ## TODO: claim a fossil that is being offered. Removes it
 ##          from the offer list and adds it to their checklist
