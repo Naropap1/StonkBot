@@ -23,7 +23,7 @@ sheet = client2.open('Stalking the Stalk Market').worksheet('Data')
 #global helper variables
 running=True
 connectedStartTime = datetime.datetime.now()
-lowestUser = sheet.acell('N1').value
+lowestUser = sheet.acell('O1').value
 
 def reconnectGspread():
     global scope
@@ -40,12 +40,13 @@ def clearDouble():
     global connectedStartTime
     if datetime.datetime.now() > connectedStartTime + datetime.timedelta(minutes=10):
         reconnectGspread()
-    curList = sheet.col_values(17)
+    curList = sheet.col_values(18)
     curRow = 1
     for h in curList:
-        sheet.update_cell(curRow,17,"")
         sheet.update_cell(curRow,18,"")
         sheet.update_cell(curRow,19,"")
+        sheet.update_cell(curRow,20,"")
+        sheet.update_cell(curRow,21,"")
         #sheet.update_cell(curRow,16,"")
         curRow = curRow + 1
 
@@ -63,7 +64,7 @@ async def on_message(message):
                 reconnectGspread()
 
             username = message.author.name.split('#')[0]
-            userList = sheet.col_values(16)
+            userList = sheet.col_values(17)
             if username in usermap:
                 username = usermap[username]
                 user_idx = userList.index(username)
@@ -91,7 +92,7 @@ async def on_message(message):
                         if value == 'HELP':
                             await message.channel.send(getHelpText())
                         else:
-                            curNum = int(sheet.acell('O1').value)
+                            curNum = int(sheet.acell('P1').value)
                             newNum = int(value)
                             if curNum < newNum:
                                 await message.channel.send("Thanks for reporting {}, but {} got you beat with {}".format(username,lowestUser,curNum))
@@ -99,9 +100,21 @@ async def on_message(message):
                                 await message.channel.send("Oh damn {}, your tied with {}, maybe help out with hosting unless someone reports lower".format(username,lowestUser,curNum))
                             else:
                                 await message.channel.send("THIS IS NOT A DRILL!!!NEW LOW!!!!    ...    {}".format(newNum))
-                                sheet.update_acell('O1',newNum)
-                                sheet.update_acell('N1',message.author.name.split('#')[0])
+                                sheet.update_acell('P1',newNum)
+                                sheet.update_acell('O1',message.author.name.split('#')[0])
                                 lowestUser = username
+                        curReportedList = sheet.col_values(1)
+                        userRow = -1
+                        if username in curReportedList:
+                            userRow = curReportedList.index(username)+1
+                        else:
+                            if len(curReportedList) == 0:
+                                userRow = 2
+                            else:
+                                userRow = len(curReportedList)+1
+                            sheet.update_acell('A{}'.format(userRow),username)
+                        dataCol = 2
+                        sheet.update_cell(userRow,dataCol,int(value))
                 elif ind >=0:
                     await message.channel.send("You must be new here... its 'number:stonks:'")
             # if not sunday
@@ -157,7 +170,7 @@ async def on_message(message):
                             else:
                                 userRow = len(curReportedList)+1
                             sheet.update_acell('A{}'.format(userRow),username)
-                        dataCol = 2
+                        dataCol = 3
                         dataCol = dataCol + datetime.datetime.today().weekday()*2 
                         timeModifier = 0
                         for role in message.author.roles:
@@ -177,7 +190,7 @@ async def on_message(message):
                 temp = ind-2
                 value = ''
                 while True:
-                    if temp>=0:
+                    if temp >= 0:
                         if message.content[temp]!='>':
                             value = message.content[temp] + value
                             temp = temp - 1
@@ -191,11 +204,17 @@ async def on_message(message):
                     if lookup_res:
                         value = lookup_res[0]
                         item_cost = lookup_res[1].replace(',','')
+                        item_mats = lookup_res[2]
                         if item_cost.isnumeric():
                             item_cost = '{:,}'.format(2*int(item_cost))
+                        elif item_mats not in ['',' ','n/a','-']:
+                            item_cost_guess = calculateValue(item_mats, username)
+                            if type(item_cost_guess) == int or item_cost_guess.isnumeric():
+                                item_cost = '*probably...* {:,}'.format(2*int(item_cost_guess))
+                            else:
+                                item_cost = '???'
                         else:
                             item_cost = '???'
-                        item_mats = lookup_res[2]
                         value_string = '({} Bells <:isabelleDab:692772908166021150> {})'.format(item_cost, item_mats)
                         if lookup_res[3].isnumeric():
                             item_ratio = float(lookup_res[3])
@@ -227,10 +246,10 @@ async def on_message(message):
                         await message.channel.send("<:naroPog:466231362563604492> This sells for {.2} profit over its materials!".format(item_ratio))
 
                     curRow = user_idx+1
-                    sheet.update_acell('P{}'.format(curRow),username)
-                    sheet.update_acell('Q{}'.format(curRow),value)
-                    sheet.update_acell('R{}'.format(curRow),item_cost)
-                    sheet.update_acell('S{}'.format(curRow),item_mats)
+                    sheet.update_acell('Q{}'.format(curRow),username)
+                    sheet.update_acell('R{}'.format(curRow),value)
+                    sheet.update_acell('S{}'.format(curRow),item_cost)
+                    sheet.update_acell('T{}'.format(curRow),item_mats)
 
             # handle fossil offers
             ind = message.content.find(':skeletor:')
@@ -249,8 +268,8 @@ async def on_message(message):
                 if value != '':
                     if value == 'CLEAR':
                         curRow = user_idx+1
-                        sheet.update_acell('P{}'.format(curRow),username)
-                        sheet.update_acell('T{}'.format(curRow),'')
+                        sheet.update_acell('Q{}'.format(curRow),username)
+                        sheet.update_acell('U{}'.format(curRow),'')
                     else:  
                         r = random.randint(1,5)
                         if r == 1:
@@ -265,8 +284,8 @@ async def on_message(message):
                             await message.channel.send("Gotta dig 'em all! FossilDex exchange offer:    ....    {}".format(value))
 
                         curRow = user_idx+1
-                        sheet.update_acell('P{}'.format(curRow),username)
-                        sheet.update_acell('T{}'.format(curRow),value)
+                        sheet.update_acell('Q{}'.format(curRow),username)
+                        sheet.update_acell('U{}'.format(curRow),value)
 
                         matches = matchFossils(value.split(','))
                         for match_row in matches:
@@ -358,6 +377,53 @@ def lookupItem(item_name):
 
     return (item_name,item_value,item_materials,item_ratio)
 
+# calculates an item's base sell value based on its material components
+# (assumes 2:1 material:item sell cost, assumes native fruit if username cannot be matched)
+def calculateValue(item_mats, username):
+    fruits = ['orange','apple','pear','peach','cherry']
+    flowers = ['pansy','cosmos','hyacinth','lily','mum','rose','windflower','flower','tulip']
+    mat_costs,_ = getMaterialCosts()
+    mat_costs_lower = {key.lower():value for key,value in mat_costs.items()}
+
+    # sanitize input
+    item_mats = [content.strip().lower() for content in item_mats.split(',')]
+    item_mats = [[content.split(' ')[0],' '.join(content.split(' ')[1:])] for content in item_mats]
+    item_mats = [[duo[0],duo[1].replace('frag.','fragment')] for duo in item_mats]
+    item_mats = [[duo[0],duo[1].replace('bl.','blossom')] for duo in item_mats]
+    print(item_mats)
+    print(mat_costs_lower)
+
+    # handle hybrid flowers
+    for flower in flowers:
+        if flower == 'windflower':
+            base_colors = ['r','w','o']
+        elif flower == 'mum':
+            base_colors = ['r','w']
+        else:
+            base_colors = ['r','w','y']
+        item_mats = [duo if flower not in duo[1] else ([duo[0],'flower'] if duo[1][0] in base_colors else 'flower-hybrid') for duo in item_mats]
+        
+
+    # handle native fruit
+    user_list = misc_sheet.col_values(6)[1:]
+    if username in user_list:
+        user_idx = user_list.index(username)
+        user_fruit = misc_sheet.col_values(8)[user_idx+1].lower()
+        if user_fruit not in fruits:
+            for fruit in fruits:
+                item_mats = [[duo[0],duo[1].replace(fruit,'fruit')] for duo in item_mats]
+        else:
+            for fruit in fruits:
+                item_mats = [[duo[0],duo[1].replace(fruit,'fruit')] if user_fruit == fruit else [duo[0],duo[1].replace(fruit,'fruit-foreign')] for duo in item_mats]
+    else:
+        for fruit in fruits:
+            item_mats = [[duo[0],duo[1].replace(fruit,'fruit')] for duo in item_mats]
+
+    if all([duo[1] in mat_costs_lower for duo in item_mats]):
+        return 2*sum([int(mat_count)*int(mat_costs_lower[mat_name]) for mat_count,mat_name in item_mats])
+    else:
+        return '???'
+
 ## TODO: lookup everyone's fossil checklists and display
 ##          whether or not anyone needs a given fossil. 
 def matchFossils(fossilList):
@@ -381,6 +447,9 @@ def matchFossils(fossilList):
         elif part in ['Left Wing','Right Wing']:
             f_part = part[:-4]
             f_part = f_part + dino + ' Wing'
+        elif part in ['Left Side','Right Side']:
+            f_part = part[:-4]
+            f_part = f_part + dino + ' Side'
         else:
             f_part = dino +' '+ part
         fossil_names.append(f_part)
@@ -412,9 +481,11 @@ def getMaterialCosts():
     cost_map = {'Tree branch':5,'Wood':60,'Softwood':60,'Hardwood':60,\
     'Stone':75,'Clay':100,'Iron nugget':375,'Gold nugget':10000,'Acorn':200,\
     'Pinecone':200,'Bamboo piece':80,'Young spring bamboo':200,'Bamboo shoot':250,\
-    'Clump of weeds':10,'Cherry-blossom petal':None,'Fruit':100,'Fruit-foreign':500,\
+    'Clump of weeds':10,'Cherry-blossom petal':200,'Fruit':100,'Fruit-foreign':500,\
     'Wasp nest':300,'Rusted part':10,'Boot':10,'Old tire':10,'Empty can':10,\
-    'Star fragment':50,'Large star fragment':2500}
+    'Star fragment':50,'Large star fragment':2500,'Zodiac fragment':500,'Coral':500,\
+    'Manila clam':100,'Giant clam':900,'Conch':700,'Cowrie':60,'Sand dollar':120,\
+    'Sea snail':180,'Venus comb':150,'Flower':40,'Flower-hybrid':80,'Coconut':250}
     cost_keys = cost_map.keys()
 
     return cost_map, cost_keys
