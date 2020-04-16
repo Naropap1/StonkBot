@@ -35,6 +35,7 @@ def reconnectGspread():
     creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
     client2 = gspread.authorize(creds)
     sheet = client2.open('Stalking the Stalk Market').worksheet('Data')
+    misc_sheet = client2.open('Stalking the Stalk Market').worksheet('Misc')
 
 def clearDouble():
     global connectedStartTime
@@ -206,16 +207,16 @@ async def on_message(message):
                         item_cost = lookup_res[1].replace(',','')
                         item_mats = lookup_res[2]
                         if item_cost.isnumeric():
-                            item_cost = '{:,}'.format(2*int(item_cost))
+                            item_cost = '{:,} Bells'.format(2*int(item_cost))
                         elif item_mats not in ['',' ','n/a','-']:
                             item_cost_guess = calculateValue(item_mats, username)
                             if type(item_cost_guess) == int or item_cost_guess.isnumeric():
-                                item_cost = '*probably...* {:,}'.format(2*int(item_cost_guess))
+                                item_cost = '*I think... {:,} Bells*'.format(2*int(item_cost_guess))
                             else:
-                                item_cost = '???'
+                                item_cost = '??? Bells'
                         else:
-                            item_cost = '???'
-                        value_string = '({} Bells <:isabelleDab:692772908166021150> {})'.format(item_cost, item_mats)
+                            item_cost = '??? Bells'
+                        value_string = '({} <:isabelleDab:692772908166021150> {})'.format(item_cost, item_mats)
                         if lookup_res[3].isnumeric():
                             item_ratio = float(lookup_res[3])
                         else:
@@ -390,8 +391,6 @@ def calculateValue(item_mats, username):
     item_mats = [[content.split(' ')[0],' '.join(content.split(' ')[1:])] for content in item_mats]
     item_mats = [[duo[0],duo[1].replace('frag.','fragment')] for duo in item_mats]
     item_mats = [[duo[0],duo[1].replace('bl.','blossom')] for duo in item_mats]
-    print(item_mats)
-    print(mat_costs_lower)
 
     # handle hybrid flowers
     for flower in flowers:
@@ -479,6 +478,7 @@ def claimFossil():
 
 def getMaterialCosts():
     cost_map = {'Tree branch':5,'Wood':60,'Softwood':60,'Hardwood':60,\
+    'Soft wood':60,'Hard wood':60,'Iron':375,'Gold':10000,'Weeds':10,\
     'Stone':75,'Clay':100,'Iron nugget':375,'Gold nugget':10000,'Acorn':200,\
     'Pinecone':200,'Bamboo piece':80,'Young spring bamboo':200,'Bamboo shoot':250,\
     'Clump of weeds':10,'Cherry-blossom petal':200,'Fruit':100,'Fruit-foreign':500,\
