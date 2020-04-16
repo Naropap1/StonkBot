@@ -207,16 +207,20 @@ async def on_message(message):
                         item_cost = lookup_res[1].replace(',','')
                         item_mats = lookup_res[2]
                         if item_cost.isnumeric():
-                            item_cost = '{:,} Bells'.format(2*int(item_cost))
+                            item_cost = 2*int(item_cost)
+                            item_cost_str = '{:,} Bells'.format(item_cost)
                         elif item_mats not in ['',' ','n/a','-']:
                             item_cost_guess = calculateValue(item_mats, username)
                             if type(item_cost_guess) == int or item_cost_guess.isnumeric():
-                                item_cost = '*I think... {:,} Bells*'.format(2*int(item_cost_guess))
+                                item_cost = 2*int(item_cost_guess)
+                                item_cost_str = '*I think... {:,} Bells*'.format(item_cost)
                             else:
-                                item_cost = '??? Bells'
+                                item_cost = '???'
+                                item_cost_str = '??? Bells'
                         else:
-                            item_cost = '??? Bells'
-                        value_string = '({} <:isabelleDab:692772908166021150> {})'.format(item_cost, item_mats)
+                            item_cost = '???'
+                            item_cost_str = '??? Bells'
+                        value_string = '({} <:isabelleDab:692772908166021150> {})'.format(item_cost_str, item_mats)
                         if lookup_res[3].isnumeric():
                             item_ratio = float(lookup_res[3])
                         else:
