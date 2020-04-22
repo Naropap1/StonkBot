@@ -200,61 +200,70 @@ async def on_message(message):
                     else:
                         break
                 if value != '':
-
-                    lookup_res = lookupItem(value)
-                    if lookup_res:
-                        value = lookup_res[0]
-                        item_cost = lookup_res[1].replace(',','')
-                        item_mats = lookup_res[2]
-                        if item_cost.isnumeric():
-                            item_cost = 2*int(item_cost)
-                            item_cost_str = '{:,} Bells'.format(item_cost)
-                        elif item_mats not in ['',' ','n/a','-']:
-                            item_cost_guess = calculateValue(item_mats, username)
-                            if type(item_cost_guess) == int or item_cost_guess.isnumeric():
-                                item_cost = 2*int(item_cost_guess)
-                                item_cost_str = '*I think... {:,} Bells*'.format(item_cost)
+                    dd_values = [content.lower().strip() for content in value.split(',')]
+                    dd_idx = 0
+                    for dd_val in dd_values:
+                        lookup_res = lookupItem(dd_val)
+                        if lookup_res:
+                            dd_val = lookup_res[0]
+                            item_cost = lookup_res[1].replace(',','')
+                            item_mats = lookup_res[2]
+                            if item_cost.isnumeric():
+                                item_cost = 2*int(item_cost)
+                                item_cost_str = '{:,} Bells'.format(item_cost)
+                            elif item_mats not in ['',' ','n/a','-']:
+                                item_cost_guess = calculateValue(item_mats, username)
+                                if type(item_cost_guess) == int or item_cost_guess.isnumeric():
+                                    item_cost = 2*int(item_cost_guess)
+                                    item_cost_str = '*I think... {:,} Bells*'.format(item_cost)
+                                else:
+                                    item_cost = '???'
+                                    item_cost_str = '??? Bells'
                             else:
                                 item_cost = '???'
                                 item_cost_str = '??? Bells'
+                            value_string = '({} <:isabelleDab:692772908166021150> {})'.format(item_cost_str, item_mats)
+                            if lookup_res[3].isnumeric():
+                                item_ratio = float(lookup_res[3])
+                            else:
+                                item_ratio = 1.00
                         else:
-                            item_cost = '???'
-                            item_cost_str = '??? Bells'
-                        value_string = '({} <:isabelleDab:692772908166021150> {})'.format(item_cost_str, item_mats)
-                        if lookup_res[3].isnumeric():
-                            item_ratio = float(lookup_res[3])
-                        else:
+                            item_cost = ''
+                            item_mats = ''
+                            value_string = ''
                             item_ratio = 1.00
-                    else:
-                        item_cost = ''
-                        item_mats = ''
-                        value_string = ''
-                        item_ratio = 1.00
 
-                    r = random.randint(1,5)
-                    if r == 1:
-                        await message.channel.send('*Jeopardy Sirens*    What is    ...    {} {}'.format(value,value_string))
-                    elif r == 2:
-                        await message.channel.send("Hollup, you're saying    ....    {}    ...    is up for <:dailydouble:692011979274977301>!? {}".format(value,value_string))
-                    elif r == 3:
-                        await message.channel.send("Time to get rich off of    ....    {} {}".format(value,value_string))
-                    elif r == 4:
-                        await message.channel.send("Gee Bill! Mom let's you sell *two*    ....    {} {}".format(value,value_string))
-                    elif r == 5:
-                        await message.channel.send("Reporting your <:dailydouble:692011979274977301> daily double <:dailydouble:692011979274977301>    ....    {} {}".format(value,value_string))
+                        r = random.randint(1,5)
+                        if r == 1:
+                            await message.channel.send('*Jeopardy Sirens*    What is    ...    {} {}'.format(dd_val,value_string))
+                        elif r == 2:
+                            await message.channel.send("Hollup, you're saying    ....    {}    ...    is up for <:dailydouble:692011979274977301>!? {}".format(dd_val,value_string))
+                        elif r == 3:
+                            await message.channel.send("Time to get rich off of    ....    {} {}".format(dd_val,value_string))
+                        elif r == 4:
+                            await message.channel.send("Gee Bill! Mom let's you sell *two*    ....    {} {}".format(dd_val,value_string))
+                        elif r == 5:
+                            await message.channel.send("Reporting your <:dailydouble:692011979274977301> daily double <:dailydouble:692011979274977301>    ....    {} {}".format(value,value_string))
 
-                    if item_ratio <= 0:
-                        await message.channel.send("*Careful*! This sells for less than it's materials! ({.2})".format(item_ratio))
-                    elif item_ratio < 1:
-                        await message.channel.send("Alas, this only sells for {.2} efficiency...".format(item_ratio))
-                    elif item_ratio > 1:
-                        await message.channel.send("<:naroPog:466231362563604492> This sells for {.2} profit over its materials!".format(item_ratio))
+                        if item_ratio <= 0:
+                            await message.channel.send("*Careful*! This sells for less than it's materials! ({.2})".format(item_ratio))
+                        elif item_ratio < 1:
+                            await message.channel.send("Alas, this only sells for {.2} efficiency...".format(item_ratio))
+                        elif item_ratio > 1:
+                            await message.channel.send("<:naroPog:466231362563604492> This sells for {.2} profit over its materials!".format(item_ratio))
 
-                    curRow = user_idx+1
-                    sheet.update_acell('Q{}'.format(curRow),username)
-                    sheet.update_acell('R{}'.format(curRow),value)
-                    sheet.update_acell('S{}'.format(curRow),item_cost)
-                    sheet.update_acell('T{}'.format(curRow),item_mats)
+                        curRow = user_idx+1
+                        sheet.update_acell('Q{}'.format(curRow),username)
+                        if dd_idx == 0:
+                            sheet.update_acell('R{}'.format(curRow),dd_val)
+                            sheet.update_acell('S{}'.format(curRow),item_cost)
+                            sheet.update_acell('T{}'.format(curRow),item_mats)
+                        else:
+                            sheet.update_acell('U{}'.format(curRow),dd_val)
+                            sheet.update_acell('V{}'.format(curRow),item_cost)
+                            sheet.update_acell('W{}'.format(curRow),item_mats)
+
+                        dd_idx += 1
 
             # handle fossil offers
             ind = message.content.find(':skeletor:')
@@ -274,7 +283,7 @@ async def on_message(message):
                     if value == 'CLEAR':
                         curRow = user_idx+1
                         sheet.update_acell('Q{}'.format(curRow),username)
-                        sheet.update_acell('U{}'.format(curRow),'')
+                        sheet.update_acell('X{}'.format(curRow),'')
                     else:  
                         r = random.randint(1,5)
                         if r == 1:
@@ -290,7 +299,7 @@ async def on_message(message):
 
                         curRow = user_idx+1
                         sheet.update_acell('Q{}'.format(curRow),username)
-                        sheet.update_acell('U{}'.format(curRow),value)
+                        sheet.update_acell('X{}'.format(curRow),value)
 
                         matches = matchFossils(value.split(','))
                         for match_row in matches:
